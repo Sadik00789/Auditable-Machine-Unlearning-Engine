@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v1.3.0
+    container_name: unlearning_surrealdb
+    entrypoint:
+      - surreal
+      - start
+      - --user
+      - root
+      - --pass
+      - root
+      - file:///mydata/surreal.db
+    ports:
+      - "8000:8000"
+    volumes:
+      - surreal_data:/mydata
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  ml_worker:
+    build:
+      context: ./ml_worker
+      dockerfile: Dockerfile
+    container_name: unlearning_ml_worker
+    ports:
+      - "50051:50051"
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+  rust_gateway:
+    build:
+      context: .
+      dockerfile: rust_gateway/Dockerfile
+    container_name: unlearning_rust_gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8080
+      - GRPC_ML_WORKER_ENDPOINT=http://ml_worker:50051
+      - SURREAL_DB_PATH=surrealdb://root:root@surrealdb:8000
+      - LANCEDB_URI=./data/lancedb
+      - NUM_SISA_SHARDS=4
+    depends_on:
+      surrealdb:
+        condition: service_healthy
+      ml_worker:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: unlearning_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+    depends_on:
+      rust_gateway:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  surreal_data:

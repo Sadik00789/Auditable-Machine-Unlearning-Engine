@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package ml_service;
+
+service MlInference {
+  rpc GenerateEmbeddings (EmbedRequest) returns (EmbedResponse);
+  rpc ExtractTriplets (ExtractRequest) returns (ExtractResponse);
+  rpc IngestBatch (BatchIngestRequest) returns (BatchIngestResponse);
+  rpc HealthCheck (HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message EmbedRequest {
+  string text = 1;
+}
+
+message EmbedResponse {
+  repeated float vector = 1;
+  int32 dimension = 2;
+}
+
+message ExtractRequest {
+  string text = 1;
+}
+
+message Triplet {
+  string subject = 1;
+  string predicate = 2;
+  string object = 3;
+}
+
+message ExtractResponse {
+  repeated Triplet triplets = 1;
+}
+
+message SingleIngestItem {
+  string id = 1;
+  string entity_id = 2;
+  string text = 3;
+}
+
+message BatchIngestRequest {
+  repeated SingleIngestItem items = 1;
+}
+
+message SingleIngestResult {
+  string id = 1;
+  string entity_id = 2;
+  repeated float vector = 3;
+  repeated Triplet triplets = 4;
+}
+
+message BatchIngestResponse {
+  repeated SingleIngestResult results = 1;
+}
+
+message HealthCheckRequest {}
+
+enum ServingStatus {
+  UNKNOWN = 0;
+  SERVING = 1;
+  NOT_SERVING = 2;
+}
+
+message HealthCheckResponse {
+  ServingStatus status = 1;
+}

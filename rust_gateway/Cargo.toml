@@ -1,0 +1,31 @@
+[package]
+name = "rust_gateway"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = { version = "0.7", features = ["ws", "macros"] }
+tower-http = { version = "0.5", features = ["cors"] }
+tokio = { version = "1.38", features = ["full"] }
+tonic = "0.12"
+prost = "0.13"
+lancedb = "0.10"
+arrow-array = "52.2.0"
+arrow-schema = "52.2.0"
+surrealdb = { version = "2.0", features = ["kv-surrealkv", "kv-mem"] }
+sha2 = "0.10"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+thiserror = "1.0"
+hex = "0.4"
+futures-util = "0.3"
+chrono = { version = "=0.4.38", features = ["serde"] }
+validator = { version = "0.18", features = ["derive"] }
+ed25519-dalek = "2.1"
+regex = "1.10"
+rand = "0.8"
+
+[build-dependencies]
+tonic-build = "0.12"
