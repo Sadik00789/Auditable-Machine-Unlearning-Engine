@@ -130,6 +130,6 @@ Connects clients to real-time engine telemetry. Sends 30-second ping heartbeats 
 ## 📜 License
 
 MIT License. Built for Auditable AI and SISA Machine Unlearning Compliance.
-<img width="1920" height="1080" alt="Screenshot 2026-08-11 234626" src="https://github.com/user-attachments/assets/bbf3d73a-fa52-435a-a3f7-b03114a61758" />
 <img width="1920" height="1080" alt="Screenshot 2026-08-11 234559" src="https://github.com/user-attachments/assets/83f27d01-b4ff-4f72-bed0-1410aeb9543a" />
+<img width="1920" height="1080" alt="Screenshot 2026-08-11 234626" src="https://github.com/user-attachments/assets/bbf3d73a-fa52-435a-a3f7-b03114a61758" />
 
