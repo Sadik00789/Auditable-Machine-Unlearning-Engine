@@ -1,19 +1,10 @@
-#![recursion_limit = "512"]
-mod api;
-mod audit;
-mod config;
-mod graph;
-mod grpc_client;
-mod sisa;
-mod state;
-mod ws;
-
 use axum::{
     routing::{get, post},
     Router,
 };
-use config::Config;
-use state::AppState;
+use rust_gateway::config::Config;
+use rust_gateway::state::AppState;
+use rust_gateway::{api, ws};
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tower_http::cors::{Any, CorsLayer};
@@ -77,6 +68,4 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-async fn health_check() -> &'static str {
-    "Auditable Unlearning Gateway is running."
-}
+use rust_gateway::health_check;

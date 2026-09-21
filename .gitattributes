@@ -1,0 +1,21 @@
+# Auditable Machine Unlearning Engine - Language Detection & Attributes
+# Prioritize core engine systems (Rust & Python) over UI component presentation views
+
+# Exclude UI presentation components from GitHub Linguist language statistics
+frontend/src/components/** linguist-detectable=false
+frontend/src/components/** linguist-vendored
+
+# Ensure Rust Gateway is fully tracked and categorized as Rust
+rust_gateway/** linguist-detectable=true
+rust_gateway/src/** linguist-language=Rust
+rust_gateway/tests/** linguist-language=Rust
+
+# Ensure Python ML Worker is fully tracked
+ml_worker/** linguist-detectable=true
+ml_worker/**.py linguist-language=Python
+
+# Ensure core Next.js application logic remains detectable (preserving TypeScript > 0%)
+frontend/src/app/** linguist-detectable=true
+frontend/src/hooks/** linguist-detectable=true
+frontend/src/lib/** linguist-detectable=true
+frontend/src/types/** linguist-detectable=true

@@ -24,15 +24,15 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10ml_service.proto\x12\nml_service\"\x1c\n\x0c\x45mbedRequest\x12\x0c\n\x04text\x18\x01 \x01(\t\"2\n\rEmbedResponse\x12\x0e\n\x06vector\x18\x01 \x03(\x02\x12\x11\n\tdimension\x18\x02 \x01(\x05\"\x1e\n\x0e\x45xtractRequest\x12\x0c\n\x04text\x18\x01 \x01(\t\"=\n\x07Triplet\x12\x0f\n\x07subject\x18\x01 \x01(\t\x12\x11\n\tpredicate\x18\x02 \x01(\t\x12\x0e\n\x06object\x18\x03 \x01(\t\"8\n\x0f\x45xtractResponse\x12%\n\x08triplets\x18\x01 \x03(\x0b\x32\x13.ml_service.Triplet\"\x14\n\x12HealthCheckRequest\"@\n\x13HealthCheckResponse\x12)\n\x06status\x18\x01 \x01(\x0e\x32\x19.ml_service.ServingStatus*:\n\rServingStatus\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07SERVING\x10\x01\x12\x0f\n\x0bNOT_SERVING\x10\x02\x32\xf4\x01\n\x0bMlInference\x12I\n\x12GenerateEmbeddings\x12\x18.ml_service.EmbedRequest\x1a\x19.ml_service.EmbedResponse\x12J\n\x0f\x45xtractTriplets\x12\x1a.ml_service.ExtractRequest\x1a\x1b.ml_service.ExtractResponse\x12N\n\x0bHealthCheck\x12\x1e.ml_service.HealthCheckRequest\x1a\x1f.ml_service.HealthCheckResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10ml_service.proto\x12\nml_service\"\x1c\n\x0c\x45mbedRequest\x12\x0c\n\x04text\x18\x01 \x01(\t\"2\n\rEmbedResponse\x12\x0e\n\x06vector\x18\x01 \x03(\x02\x12\x11\n\tdimension\x18\x02 \x01(\x05\"\x1e\n\x0e\x45xtractRequest\x12\x0c\n\x04text\x18\x01 \x01(\t\"=\n\x07Triplet\x12\x0f\n\x07subject\x18\x01 \x01(\t\x12\x11\n\tpredicate\x18\x02 \x01(\t\x12\x0e\n\x06object\x18\x03 \x01(\t\"8\n\x0f\x45xtractResponse\x12%\n\x08triplets\x18\x01 \x03(\x0b\x32\x13.ml_service.Triplet\"?\n\x10SingleIngestItem\x12\n\n\x02id\x18\x01 \x01(\t\x12\x11\n\tentity_id\x18\x02 \x01(\t\x12\x0c\n\x04text\x18\x03 \x01(\t\"A\n\x12\x42\x61tchIngestRequest\x12+\n\x05items\x18\x01 \x03(\x0b\x32\x1c.ml_service.SingleIngestItem\"j\n\x12SingleIngestResult\x12\n\n\x02id\x18\x01 \x01(\t\x12\x11\n\tentity_id\x18\x02 \x01(\t\x12\x0e\n\x06vector\x18\x03 \x03(\x02\x12%\n\x08triplets\x18\x04 \x03(\x0b\x32\x13.ml_service.Triplet\"F\n\x13\x42\x61tchIngestResponse\x12/\n\x07results\x18\x01 \x03(\x0b\x32\x1e.ml_service.SingleIngestResult\"\x14\n\x12HealthCheckRequest\"@\n\x13HealthCheckResponse\x12)\n\x06status\x18\x01 \x01(\x0e\x32\x19.ml_service.ServingStatus*:\n\rServingStatus\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07SERVING\x10\x01\x12\x0f\n\x0bNOT_SERVING\x10\x02\x32\xc4\x02\n\x0bMlInference\x12I\n\x12GenerateEmbeddings\x12\x18.ml_service.EmbedRequest\x1a\x19.ml_service.EmbedResponse\x12J\n\x0f\x45xtractTriplets\x12\x1a.ml_service.ExtractRequest\x1a\x1b.ml_service.ExtractResponse\x12N\n\x0bIngestBatch\x12\x1e.ml_service.BatchIngestRequest\x1a\x1f.ml_service.BatchIngestResponse\x12N\n\x0bHealthCheck\x12\x1e.ml_service.HealthCheckRequest\x1a\x1f.ml_service.HealthCheckResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'ml_service_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_SERVINGSTATUS']._serialized_start=355
-  _globals['_SERVINGSTATUS']._serialized_end=413
+  _globals['_SERVINGSTATUS']._serialized_start=667
+  _globals['_SERVINGSTATUS']._serialized_end=725
   _globals['_EMBEDREQUEST']._serialized_start=32
   _globals['_EMBEDREQUEST']._serialized_end=60
   _globals['_EMBEDRESPONSE']._serialized_start=62
@@ -43,10 +43,18 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_TRIPLET']._serialized_end=207
   _globals['_EXTRACTRESPONSE']._serialized_start=209
   _globals['_EXTRACTRESPONSE']._serialized_end=265
-  _globals['_HEALTHCHECKREQUEST']._serialized_start=267
-  _globals['_HEALTHCHECKREQUEST']._serialized_end=287
-  _globals['_HEALTHCHECKRESPONSE']._serialized_start=289
-  _globals['_HEALTHCHECKRESPONSE']._serialized_end=353
-  _globals['_MLINFERENCE']._serialized_start=416
-  _globals['_MLINFERENCE']._serialized_end=660
+  _globals['_SINGLEINGESTITEM']._serialized_start=267
+  _globals['_SINGLEINGESTITEM']._serialized_end=330
+  _globals['_BATCHINGESTREQUEST']._serialized_start=332
+  _globals['_BATCHINGESTREQUEST']._serialized_end=397
+  _globals['_SINGLEINGESTRESULT']._serialized_start=399
+  _globals['_SINGLEINGESTRESULT']._serialized_end=505
+  _globals['_BATCHINGESTRESPONSE']._serialized_start=507
+  _globals['_BATCHINGESTRESPONSE']._serialized_end=577
+  _globals['_HEALTHCHECKREQUEST']._serialized_start=579
+  _globals['_HEALTHCHECKREQUEST']._serialized_end=599
+  _globals['_HEALTHCHECKRESPONSE']._serialized_start=601
+  _globals['_HEALTHCHECKRESPONSE']._serialized_end=665
+  _globals['_MLINFERENCE']._serialized_start=728
+  _globals['_MLINFERENCE']._serialized_end=1052
 # @@protoc_insertion_point(module_scope)

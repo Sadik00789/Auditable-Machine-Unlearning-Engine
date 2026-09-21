@@ -5,7 +5,7 @@ import warnings
 
 import ml_service_pb2 as ml__service__pb2
 
-GRPC_GENERATED_VERSION = '1.83.0'
+GRPC_GENERATED_VERSION = '1.84.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -44,6 +44,11 @@ class MlInferenceStub:
                 request_serializer=ml__service__pb2.ExtractRequest.SerializeToString,
                 response_deserializer=ml__service__pb2.ExtractResponse.FromString,
                 _registered_method=True)
+        self.IngestBatch = channel.unary_unary(
+                '/ml_service.MlInference/IngestBatch',
+                request_serializer=ml__service__pb2.BatchIngestRequest.SerializeToString,
+                response_deserializer=ml__service__pb2.BatchIngestResponse.FromString,
+                _registered_method=True)
         self.HealthCheck = channel.unary_unary(
                 '/ml_service.MlInference/HealthCheck',
                 request_serializer=ml__service__pb2.HealthCheckRequest.SerializeToString,
@@ -61,6 +66,12 @@ class MlInferenceServicer:
         raise NotImplementedError('Method not implemented!')
 
     def ExtractTriplets(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def IngestBatch(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -84,6 +95,11 @@ def add_MlInferenceServicer_to_server(servicer, server):
                     servicer.ExtractTriplets,
                     request_deserializer=ml__service__pb2.ExtractRequest.FromString,
                     response_serializer=ml__service__pb2.ExtractResponse.SerializeToString,
+            ),
+            'IngestBatch': grpc.unary_unary_rpc_method_handler(
+                    servicer.IngestBatch,
+                    request_deserializer=ml__service__pb2.BatchIngestRequest.FromString,
+                    response_serializer=ml__service__pb2.BatchIngestResponse.SerializeToString,
             ),
             'HealthCheck': grpc.unary_unary_rpc_method_handler(
                     servicer.HealthCheck,
@@ -145,6 +161,33 @@ class MlInference:
             '/ml_service.MlInference/ExtractTriplets',
             ml__service__pb2.ExtractRequest.SerializeToString,
             ml__service__pb2.ExtractResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def IngestBatch(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/ml_service.MlInference/IngestBatch',
+            ml__service__pb2.BatchIngestRequest.SerializeToString,
+            ml__service__pb2.BatchIngestResponse.FromString,
             options,
             channel_credentials,
             insecure,

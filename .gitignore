@@ -16,6 +16,7 @@ build/
 *.dylib
 *.dll
 *.exe
+*.tsbuildinfo
 
 # Database & Persistent storage
 data/
