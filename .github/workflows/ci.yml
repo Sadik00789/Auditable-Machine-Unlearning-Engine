@@ -43,7 +43,7 @@ jobs:
         working-directory: rust_gateway
 
       - name: Cargo Test
-        run: cargo test --verbose -j 2
+        run: cargo test --verbose -j 2 -- --test-threads=1
         working-directory: rust_gateway
 
   ml-worker:
