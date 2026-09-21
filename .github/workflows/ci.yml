@@ -31,12 +31,19 @@ jobs:
         with:
           workspaces: "rust_gateway -> rust_gateway/target"
 
+      - name: Fetch Dependencies & Patch Recursion Limit
+        run: |
+          cargo fetch
+          # lance-0.17.0 async blocks exceed rustc's default recursion limit (128) during layout computation
+          find ~/.cargo/registry/src -path "*/lance-0.17.0/src/lib.rs" -exec sed -i '1i #![recursion_limit = "512"]' {} +
+        working-directory: rust_gateway
+
       - name: Cargo Check
-        run: cargo check --verbose
+        run: cargo check --verbose -j 2
         working-directory: rust_gateway
 
       - name: Cargo Test
-        run: cargo test --verbose
+        run: cargo test --verbose -j 2
         working-directory: rust_gateway
 
   ml-worker:
@@ -67,7 +74,7 @@ jobs:
         working-directory: ml_worker
 
       - name: Run Pytest
-        run: pytest -v tests/
+        run: python -m pytest -v tests/
         working-directory: ml_worker
 
   frontend:
@@ -77,10 +84,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js 20
+      - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
