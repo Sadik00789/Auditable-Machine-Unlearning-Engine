@@ -45,7 +45,7 @@ services:
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=8080
       - GRPC_ML_WORKER_ENDPOINT=http://ml_worker:50051
-      - SURREAL_DB_PATH=surrealdb://root:root@surrealdb:8000
+      - SURREAL_DB_PATH=./data/surreal_graph
       - LANCEDB_URI=./data/lancedb
       - NUM_SISA_SHARDS=4
     depends_on:
@@ -69,6 +69,7 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - NEXT_PUBLIC_WS_URL=ws://localhost:8080/ws
     depends_on:
       rust_gateway:
         condition: service_healthy

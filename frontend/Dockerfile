@@ -1,17 +1,17 @@
 # Multi-stage Dockerfile for Next.js 14 Dashboard
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED 1
 RUN npm run build
 
 # Production runner image
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 

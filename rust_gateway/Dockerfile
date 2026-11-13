@@ -17,6 +17,9 @@ COPY rust_gateway /app/rust_gateway
 
 WORKDIR /app/rust_gateway
 
+RUN cargo fetch && \
+    find /usr/local/cargo/registry/src -path "*/lance-0.17.0/src/lib.rs" -exec sed -i '1i #![recursion_limit = "512"]' {} +
+
 RUN cargo build --release
 
 # Final runtime image
