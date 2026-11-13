@@ -77,3 +77,19 @@ def test_ingest_batch_empty_servicer(servicer):
     response = servicer.IngestBatch(request, context)
     assert len(response.results) == 0
     context.abort.assert_not_called()
+
+def test_ingest_batch_empty_item_text_aborts(servicer):
+    import grpc
+    items = [
+        ml_service_pb2.SingleIngestItem(
+            id="doc_empty",
+            entity_id="user_empty",
+            text="   "
+        )
+    ]
+    request = ml_service_pb2.BatchIngestRequest(items=items)
+    context = MagicMock()
+
+    servicer.IngestBatch(request, context)
+    context.abort.assert_called_once()
+    assert context.abort.call_args[0][0] == grpc.StatusCode.INVALID_ARGUMENT

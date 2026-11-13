@@ -26,9 +26,11 @@ class MlInferenceServicer(ml_service_pb2_grpc.MlInferenceServicer):
             return ml_service_pb2.EmbedResponse(vector=vector, dimension=len(vector))
         except ValueError as e:
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(e))
+            return ml_service_pb2.EmbedResponse()
         except Exception as e:
             logger.error(f"GenerateEmbeddings exception: {e}")
             context.abort(grpc.StatusCode.INTERNAL, "Failed to generate embeddings.")
+            return ml_service_pb2.EmbedResponse()
 
     def ExtractTriplets(self, request, context):
         try:
@@ -42,9 +44,13 @@ class MlInferenceServicer(ml_service_pb2_grpc.MlInferenceServicer):
                 for t in raw_triplets
             ]
             return ml_service_pb2.ExtractResponse(triplets=pb_triplets)
+        except ValueError as e:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(e))
+            return ml_service_pb2.ExtractResponse()
         except Exception as e:
             logger.error(f"ExtractTriplets exception: {e}")
             context.abort(grpc.StatusCode.INTERNAL, "Failed to extract triplets.")
+            return ml_service_pb2.ExtractResponse()
 
     def IngestBatch(self, request, context):
         try:
@@ -76,9 +82,13 @@ class MlInferenceServicer(ml_service_pb2_grpc.MlInferenceServicer):
                 )
 
             return ml_service_pb2.BatchIngestResponse(results=results)
+        except ValueError as e:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(e))
+            return ml_service_pb2.BatchIngestResponse()
         except Exception as e:
             logger.error(f"IngestBatch exception: {e}")
             context.abort(grpc.StatusCode.INTERNAL, f"Batch ingestion failed: {e}")
+            return ml_service_pb2.BatchIngestResponse()
 
     def HealthCheck(self, request, context):
         return ml_service_pb2.HealthCheckResponse(

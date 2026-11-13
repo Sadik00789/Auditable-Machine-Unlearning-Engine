@@ -28,6 +28,8 @@ class Embedder:
     def encode_batch(self, texts: List[str]) -> List[List[float]]:
         if not texts:
             return []
+        if any(not t or not t.strip() for t in texts):
+            raise ValueError("Batch input texts cannot contain empty strings.")
         try:
             vectors = self.model.encode(texts, convert_to_numpy=True, normalize_embeddings=True, batch_size=32)
             return vectors.tolist()

@@ -41,3 +41,11 @@ def test_single_noun_fallback(extractor):
     assert len(triplets) == 1
     assert triplets[0]["subject"] == "Cryptography"
     assert triplets[0]["predicate"] == "ASSOCIATED_WITH"
+
+def test_copular_sentence_extraction(extractor):
+    text = "Alice is an engineer."
+    triplets = extractor.extract(text)
+    assert len(triplets) >= 1
+    assert triplets[0]["subject"].lower() == "alice"
+    assert triplets[0]["predicate"] == "BE"
+    assert triplets[0]["object"].lower() == "engineer"

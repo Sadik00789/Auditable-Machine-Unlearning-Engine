@@ -28,9 +28,9 @@ class TripletExtractor:
             for token in sent:
                 if "subj" in token.dep_:
                     subject = token.text
-                elif token.pos_ == "VERB":
+                elif token.pos_ in ("VERB", "AUX"):
                     predicate = token.lemma_
-                elif "obj" in token.dep_:
+                elif any(dep in token.dep_ for dep in ("obj", "attr", "oprd")):
                     obj = token.text
                 
                 if subject and predicate and obj:
@@ -43,7 +43,7 @@ class TripletExtractor:
 
         if not triplets:
             nouns = [token.text for token in doc if token.pos_ in ("NOUN", "PROPN")]
-            verbs = [token.lemma_ for token in doc if token.pos_ == "VERB"]
+            verbs = [token.lemma_ for token in doc if token.pos_ in ("VERB", "AUX")]
             if len(nouns) >= 2 and verbs:
                 triplets.append({
                     "subject": nouns[0],
@@ -54,7 +54,7 @@ class TripletExtractor:
                 triplets.append({
                     "subject": nouns[0],
                     "predicate": "ASSOCIATED_WITH",
-                    "object": doc.text[:30]
+                    "object": doc.text[:30].strip()
                 })
 
         return triplets
