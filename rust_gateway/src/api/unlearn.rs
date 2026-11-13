@@ -18,7 +18,7 @@ pub struct UnlearnResponse {
     pub status: String,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct UnlearnErrorResponse {
     pub error: String,
     pub message: String,
@@ -116,9 +116,20 @@ pub async fn handle_unlearn(
     let certificate = MerkleProofGenerator::generate_certificate(&payload.entity_id, shard_id);
 
     // Save persistent audit certificate to SurrealDB table
-    if let Err(e) = state.surreal_client.save_audit_certificate(&certificate).await {
-        error!("Failed to persist audit certificate in SurrealDB: {}", e);
-    }
+    state
+        .surreal_client
+        .save_audit_certificate(&certificate)
+        .await
+        .map_err(|e| {
+            error!("Failed to persist audit certificate in SurrealDB: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(UnlearnErrorResponse {
+                    error: "AUDIT_PERSIST_FAILED".to_string(),
+                    message: format!("Failed to persist audit certificate: {}", e),
+                }),
+            )
+        })?;
 
     // 4. Broadcast deletion and audit events over WebSockets
     let _ = state.ws_sender.send(WsEvent::NodeDeleted {
@@ -156,12 +167,51 @@ pub async fn handle_batch_unlearn(
         ));
     }
 
-    let mut results = Vec::new();
+    for entity_id in &payload {
+        if entity_id.trim().is_empty() || !crate::api::ingest::validate_identifier(entity_id) {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "Invalid 'entity_id' '{}'. Must be 3-64 characters (alphanumeric, '_', '-').",
+                    entity_id
+                ),
+            ));
+        }
+    }
+
+    let mut join_set = tokio::task::JoinSet::new();
     for entity_id in payload {
+        let state_clone = state.clone();
         let req = UnlearnRequest { entity_id };
-        match handle_unlearn(State(state.clone()), Json(req)).await {
-            Ok(Json(resp)) => results.push(resp),
-            Err((_, err_json)) => error!("Batch unlearn item failed: {}", err_json.message),
+        join_set.spawn(async move { handle_unlearn(State(state_clone), Json(req)).await });
+    }
+
+    let mut results = Vec::new();
+    let mut first_error: Option<(StatusCode, String)> = None;
+    while let Some(res) = join_set.join_next().await {
+        match res {
+            Ok(Ok(Json(resp))) => results.push(resp),
+            Ok(Err((code, err_json))) => {
+                error!("Batch unlearn item failed: {}", err_json.message);
+                if first_error.is_none() {
+                    first_error = Some((code, err_json.0.message));
+                }
+            }
+            Err(e) => {
+                error!("Batch unlearn task join error: {}", e);
+                if first_error.is_none() {
+                    first_error = Some((
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("Batch unlearn task failed: {}", e),
+                    ));
+                }
+            }
+        }
+    }
+
+    if results.is_empty() {
+        if let Some((code, msg)) = first_error {
+            return Err((code, msg));
         }
     }
 

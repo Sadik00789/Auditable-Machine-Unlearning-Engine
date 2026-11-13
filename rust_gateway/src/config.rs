@@ -31,7 +31,8 @@ impl Config {
 
         let num_sisa_shards = env::var("NUM_SISA_SHARDS")
             .ok()
-            .and_then(|s| s.parse().ok())
+            .and_then(|s| s.parse::<u32>().ok())
+            .filter(|&n| n > 0)
             .unwrap_or(4);
 
         Self {

@@ -55,3 +55,34 @@ fn test_merkle_root_hash_determinism() {
 
     assert_eq!(cert.merkle_root_hash, expected_hash);
 }
+
+#[test]
+fn test_merkle_certificate_verification_and_tamper_detection() {
+    let cert = MerkleProofGenerator::generate_certificate("patient_verify_1", 1);
+    assert!(MerkleProofGenerator::verify_certificate(&cert));
+
+    // Tampered entity_id must fail verification
+    let mut tampered_entity = cert.clone();
+    tampered_entity.entity_id = "patient_verify_2".to_string();
+    assert!(!MerkleProofGenerator::verify_certificate(&tampered_entity));
+
+    // Tampered merkle_root_hash must fail verification
+    let mut tampered_hash = cert.clone();
+    tampered_hash.merkle_root_hash = "0".repeat(64);
+    assert!(!MerkleProofGenerator::verify_certificate(&tampered_hash));
+
+    // Tampered signature must fail verification
+    let mut tampered_sig = cert.clone();
+    tampered_sig.signature = "f".repeat(128);
+    assert!(!MerkleProofGenerator::verify_certificate(&tampered_sig));
+}
+
+#[test]
+fn test_unique_audit_ids_within_same_second() {
+    let cert_a = MerkleProofGenerator::generate_certificate("entity_same_sec_a", 0);
+    let cert_b = MerkleProofGenerator::generate_certificate("entity_same_sec_b", 0);
+    let cert_a_again = MerkleProofGenerator::generate_certificate("entity_same_sec_a", 0);
+
+    assert_ne!(cert_a.audit_id, cert_b.audit_id);
+    assert_ne!(cert_a.audit_id, cert_a_again.audit_id);
+}

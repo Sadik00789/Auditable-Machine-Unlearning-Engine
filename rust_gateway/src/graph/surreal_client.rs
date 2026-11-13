@@ -24,7 +24,15 @@ pub struct GraphClient {
 impl GraphClient {
     /// Initializes an embedded SurrealDB instance backed by SurrealKV on local disk
     pub async fn new(db_path: &str) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
-        let db = Surreal::new::<SurrealKv>(db_path).await?;
+        let sanitized_path = if db_path.starts_with("surrealdb://") {
+            "./data/surreal_graph"
+        } else if let Some(stripped) = db_path.strip_prefix("file://") {
+            stripped
+        } else {
+            db_path
+        };
+
+        let db = Surreal::new::<SurrealKv>(sanitized_path).await?;
         
         db.use_ns("unlearning_engine")
           .use_db("audit_graph")
@@ -44,9 +52,14 @@ impl GraphClient {
         shard_id: u32,
         entity_id: &str,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let sub_id = format!("{}:{}", entity_id, subject);
+        let obj_id = format!("{}:{}", entity_id, object);
+
         let sql = "
-            LET $sub = type::thing('concept', $subject);
-            LET $obj = type::thing('concept', $object);
+            LET $sub = type::thing('concept', $sub_id);
+            LET $obj = type::thing('concept', $obj_id);
+            LET $ent = type::thing('entity', $entity_id);
+            DELETE PURGED_FROM WHERE in = $ent;
             UPSERT $sub SET name = $subject, entity_id = $entity_id;
             UPSERT $obj SET name = $object, entity_id = $entity_id;
             RELATE $sub->KNOWLEDGE->$obj SET predicate = $predicate, shard_id = $shard_id, entity_id = $entity_id, timestamp = time::now();
@@ -54,12 +67,15 @@ impl GraphClient {
 
         self.db
             .query(sql)
+            .bind(("sub_id", sub_id))
+            .bind(("obj_id", obj_id))
             .bind(("subject", subject.to_string()))
             .bind(("predicate", predicate.to_string()))
             .bind(("object", object.to_string()))
             .bind(("shard_id", shard_id))
             .bind(("entity_id", entity_id.to_string()))
-            .await?;
+            .await?
+            .check()?;
 
         Ok(())
     }
@@ -77,7 +93,8 @@ impl GraphClient {
         self.db
             .query(sql)
             .bind(("entity_id", entity_id.to_string()))
-            .await?;
+            .await?
+            .check()?;
 
         Ok(())
     }
@@ -100,7 +117,8 @@ impl GraphClient {
             .query(sql)
             .bind(("entity_id", entity_id.to_string()))
             .bind(("shard_id", shard_id))
-            .await?;
+            .await?
+            .check()?;
 
         Ok(())
     }
@@ -120,9 +138,10 @@ impl GraphClient {
             .db
             .query(sql)
             .bind(("entity_id", entity_id.to_string()))
-            .await?;
+            .await?
+            .check()?;
 
-        let shards_nested: Vec<Vec<u32>> = response.take(0).unwrap_or_default();
+        let shards_nested: Vec<Vec<u32>> = response.take(0)?;
         let shards: Vec<u32> = shards_nested.into_iter().flatten().collect();
         Ok(shards)
     }
@@ -140,14 +159,15 @@ impl GraphClient {
             .db
             .query(sql)
             .bind(("entity_id", entity_id.to_string()))
-            .await?;
+            .await?
+            .check()?;
 
         #[derive(Deserialize)]
         struct CountResult {
             count: usize,
         }
 
-        let results: Vec<CountResult> = response.take(0).unwrap_or_default();
+        let results: Vec<CountResult> = response.take(0)?;
         let count = results.first().map(|r| r.count).unwrap_or(0);
         Ok(count > 0)
     }
@@ -178,7 +198,8 @@ impl GraphClient {
             .bind(("signature", cert.signature.clone()))
             .bind(("timestamp_epoch", cert.timestamp_epoch))
             .bind(("status", cert.status.clone()))
-            .await?;
+            .await?
+            .check()?;
 
         Ok(())
     }
@@ -190,7 +211,8 @@ impl GraphClient {
         shard_id: u32,
     ) -> Result<Option<crate::audit::merkle_proof::AuditCertificate>, Box<dyn std::error::Error + Send + Sync>> {
         let sql = "
-            SELECT * FROM audit_certificates 
+            SELECT audit_id, entity_id, shard_id, merkle_root_hash, signature, timestamp_epoch, status
+            FROM audit_certificates 
             WHERE entity_id = $entity_id AND shard_id = $shard_id 
             ORDER BY timestamp_epoch DESC LIMIT 1;
         ";
@@ -200,9 +222,10 @@ impl GraphClient {
             .query(sql)
             .bind(("entity_id", entity_id.to_string()))
             .bind(("shard_id", shard_id))
-            .await?;
+            .await?
+            .check()?;
 
-        let certs: Vec<crate::audit::merkle_proof::AuditCertificate> = response.take(0).unwrap_or_default();
+        let certs: Vec<crate::audit::merkle_proof::AuditCertificate> = response.take(0)?;
         Ok(certs.into_iter().next())
     }
 }

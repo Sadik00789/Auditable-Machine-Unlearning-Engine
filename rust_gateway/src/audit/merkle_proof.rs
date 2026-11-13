@@ -1,8 +1,9 @@
-use ed25519_dalek::{Signer, SigningKey};
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier};
 use rand::{rngs::OsRng, RngCore};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::env;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::OnceLock;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -18,6 +19,7 @@ pub struct AuditCertificate {
 }
 
 static SIGNING_KEY: OnceLock<SigningKey> = OnceLock::new();
+static AUDIT_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 fn get_signing_key() -> &'static SigningKey {
     SIGNING_KEY.get_or_init(|| {
@@ -54,7 +56,8 @@ impl MerkleProofGenerator {
         let signature = signing_key.sign(hash_result.as_bytes());
         let signature_hex = hex::encode(signature.to_bytes());
 
-        let audit_id = format!("audit_{}_{}", shard_id, now);
+        let seq = AUDIT_COUNTER.fetch_add(1, Ordering::Relaxed);
+        let audit_id = format!("audit_{}_{}_{}_{}", shard_id, now, &hash_result[..8], seq);
 
         AuditCertificate {
             audit_id,
@@ -65,5 +68,32 @@ impl MerkleProofGenerator {
             timestamp_epoch: now,
             status: "VERIFIED_PURGED".to_string(),
         }
+    }
+
+    /// Verifies both the SHA-256 Merkle root hash and the Ed25519 signature of an AuditCertificate.
+    pub fn verify_certificate(cert: &AuditCertificate) -> bool {
+        let expected_payload = format!("{}:{}:{}", cert.entity_id, cert.shard_id, cert.timestamp_epoch);
+        let mut hasher = Sha256::new();
+        hasher.update(expected_payload.as_bytes());
+        let expected_hash = hex::encode(hasher.finalize());
+
+        if cert.merkle_root_hash != expected_hash {
+            return false;
+        }
+
+        let sig_bytes = match hex::decode(&cert.signature) {
+            Ok(bytes) => bytes,
+            Err(_) => return false,
+        };
+        let sig_arr: [u8; 64] = match sig_bytes.try_into() {
+            Ok(arr) => arr,
+            Err(_) => return false,
+        };
+        let signature = Signature::from_bytes(&sig_arr);
+
+        get_signing_key()
+            .verifying_key()
+            .verify(cert.merkle_root_hash.as_bytes(), &signature)
+            .is_ok()
     }
 }

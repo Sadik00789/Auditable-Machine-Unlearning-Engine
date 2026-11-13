@@ -144,6 +144,21 @@ pub async fn handle_batch_ingest(
         ));
     }
 
+    for item in &payload {
+        if item.text.trim().is_empty() || item.entity_id.trim().is_empty() {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "Request payload 'text' and 'entity_id' cannot be empty.".to_string(),
+            ));
+        }
+        if !validate_identifier(&item.id) || !validate_identifier(&item.entity_id) {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "Invalid 'id' or 'entity_id'. Must be 3-64 characters (alphanumeric, '_', '-').".to_string(),
+            ));
+        }
+    }
+
     let mut join_set = tokio::task::JoinSet::new();
 
     for req in payload {
@@ -154,11 +169,31 @@ pub async fn handle_batch_ingest(
     }
 
     let mut results = Vec::new();
+    let mut first_error: Option<(StatusCode, String)> = None;
     while let Some(res) = join_set.join_next().await {
         match res {
             Ok(Ok(Json(resp))) => results.push(resp),
-            Ok(Err((code, msg))) => error!("Batch item failed: {} - {}", code, msg),
-            Err(e) => error!("Batch task join error: {}", e),
+            Ok(Err((code, msg))) => {
+                error!("Batch item failed: {} - {}", code, msg);
+                if first_error.is_none() {
+                    first_error = Some((code, msg));
+                }
+            }
+            Err(e) => {
+                error!("Batch task join error: {}", e);
+                if first_error.is_none() {
+                    first_error = Some((
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("Batch task join error: {}", e),
+                    ));
+                }
+            }
+        }
+    }
+
+    if results.is_empty() {
+        if let Some((code, msg)) = first_error {
+            return Err((code, msg));
         }
     }
 

@@ -105,3 +105,57 @@ async fn test_lancedb_vector_insert_exist_and_purge() {
     let exists_post_purge = manager.entity_exists(entity_id).await.expect("query exists");
     assert!(!exists_post_purge);
 }
+
+#[tokio::test]
+async fn test_concurrent_shard_inserts_and_idempotency() {
+    let tmp = tempdir().expect("create tempdir");
+    let conn = lancedb::connect(tmp.path().to_str().unwrap())
+        .execute()
+        .await
+        .expect("lance connect");
+    // Use 1 shard to force all concurrent tasks onto shard_0
+    let manager = SisaShardManager::new(conn, 1, 4);
+
+    let mut handles = Vec::new();
+    for i in 0..8 {
+        let mgr = manager.clone();
+        handles.push(tokio::spawn(async move {
+            let doc_id = format!("doc_{}", i);
+            let entity_id = format!("entity_{}", i);
+            mgr.insert_vector(&doc_id, &entity_id, &[0.1, 0.2, 0.3, 0.4])
+                .await
+        }));
+    }
+
+    for h in handles {
+        let res = h.await.expect("join").expect("concurrent insert");
+        assert_eq!(res, 0);
+    }
+
+    // Re-inserting same doc_id should succeed idempotently
+    manager
+        .insert_vector("doc_0", "entity_0", &[0.5, 0.6, 0.7, 0.8])
+        .await
+        .expect("re-insert doc_0");
+
+    assert!(manager.entity_exists("entity_0").await.expect("exists"));
+}
+
+#[tokio::test]
+async fn test_dimension_mismatch_and_zero_shard_guard() {
+    let tmp = tempdir().expect("create tempdir");
+    let conn = lancedb::connect(tmp.path().to_str().unwrap())
+        .execute()
+        .await
+        .expect("lance connect");
+
+    // Passing 0 shards must safely clamp to 1 instead of panicking on modulo
+    let manager = SisaShardManager::new(conn, 0, 4);
+    assert_eq!(manager.get_shard_id("any_entity"), 0);
+
+    // Wrong vector dimension must return an error
+    let err = manager
+        .insert_vector("doc_bad_dim", "entity_bad_dim", &[0.1, 0.2])
+        .await;
+    assert!(err.is_err());
+}

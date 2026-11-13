@@ -27,7 +27,12 @@ fn test_config_lifecycle() {
     assert_eq!(custom.server_addr(), "0.0.0.0:9090");
     assert_eq!(custom.num_sisa_shards, 8);
 
-    // 3. Clean up environment
+    // 3. Zero shards must fallback to default (4) to prevent divide-by-zero
+    env::set_var("NUM_SISA_SHARDS", "0");
+    let zero_shard_fallback = Config::from_env();
+    assert_eq!(zero_shard_fallback.num_sisa_shards, 4);
+
+    // 4. Clean up environment
     env::remove_var("SERVER_PORT");
     env::remove_var("SERVER_HOST");
     env::remove_var("NUM_SISA_SHARDS");

@@ -15,6 +15,8 @@ pub enum SisaError {
     Lance(#[from] lancedb::Error),
     #[error("Arrow array error: {0}")]
     Arrow(#[from] arrow_schema::ArrowError),
+    #[error("Vector dimension mismatch: expected {expected}, got {actual}")]
+    DimensionMismatch { expected: usize, actual: usize },
 }
 
 #[derive(Clone)]
@@ -27,6 +29,7 @@ pub struct SisaShardManager {
 
 impl SisaShardManager {
     pub fn new(conn: Connection, num_shards: u32, dimension: usize) -> Self {
+        let num_shards = num_shards.max(1);
         let mut locks = HashMap::new();
         for id in 0..num_shards {
             locks.insert(id, Arc::new(RwLock::new(())));
@@ -82,9 +85,16 @@ impl SisaShardManager {
         entity_id: &str,
         vector: &[f32],
     ) -> Result<u32, SisaError> {
+        if vector.len() != self.dimension {
+            return Err(SisaError::DimensionMismatch {
+                expected: self.dimension,
+                actual: vector.len(),
+            });
+        }
+
         let shard_id = self.get_shard_id(entity_id);
         let lock = self.get_shard_lock(shard_id);
-        let _read_guard = lock.read().await;
+        let _write_guard = lock.write().await;
 
         let table_name = format!("shard_{}", shard_id);
 
@@ -112,6 +122,7 @@ impl SisaShardManager {
         let table_names = self.conn.table_names().execute().await?;
         if table_names.contains(&table_name) {
             let table = self.conn.open_table(&table_name).execute().await?;
+            let _ = table.delete(&format!("id = '{}'", id)).await;
             table.add(reader).execute().await?;
         } else {
             self.conn
@@ -150,6 +161,9 @@ impl SisaShardManager {
     /// Checks if an entity exists in any LanceDB SISA shard table
     pub async fn entity_exists(&self, entity_id: &str) -> Result<bool, SisaError> {
         let shard_id = self.get_shard_id(entity_id);
+        let lock = self.get_shard_lock(shard_id);
+        let _read_guard = lock.read().await;
+
         let table_name = format!("shard_{}", shard_id);
 
         let table_names = self.conn.table_names().execute().await?;
