@@ -63,6 +63,22 @@ describe('Frontend API Client', () => {
     ).rejects.toThrow('Invalid payload identifier');
   });
 
+  it('triggerUnlearn extracts JSON error message on structured failure', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      text: async () =>
+        JSON.stringify({
+          error: 'ENTITY_NOT_FOUND',
+          message: "Entity 'missing_1' does not exist in graph or vector storage.",
+        }),
+    });
+
+    await expect(triggerUnlearn({ entity_id: 'missing_1' })).rejects.toThrow(
+      "Entity 'missing_1' does not exist in graph or vector storage."
+    );
+  });
+
   it('ingestBatchData sends POST to /api/v1/ingest/batch', async () => {
     const mockBatchResponse = {
       results: [

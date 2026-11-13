@@ -363,7 +363,9 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ events, certificates }) =>
                         </div>
                         <div>
                           <span className="text-gray-500">SurrealDB Graph Audit:</span>{' '}
-                          <span className="text-emerald-400">RECORDED_PURGED_RELATION</span>
+                          <span className={verifyResult.is_valid ? 'text-emerald-400' : 'text-rose-400'}>
+                            {verifyResult.is_valid ? 'RECORDED_PURGED_RELATION' : 'UNVERIFIED_OR_MISSING'}
+                          </span>
                         </div>
                       </div>
                     </div>

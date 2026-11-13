@@ -1,9 +1,10 @@
 import React from 'react';
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MetricsHeader } from '@/components/MetricsHeader';
 import { AuditLogs } from '@/components/AuditLogs';
 import { EngineMetrics, AuditCertificate } from '@/types';
+import * as api from '@/lib/api';
 
 describe('MetricsHeader Component', () => {
   const mockMetrics: EngineMetrics = {
@@ -62,5 +63,21 @@ describe('AuditLogs Component', () => {
     expect(screen.getByText('patient_alpha')).toBeInTheDocument();
     expect(screen.getByText(/#Shard-0/i)).toBeInTheDocument();
     expect(screen.getByText('VERIFIED_PURGED')).toBeInTheDocument();
+  });
+
+  it('displays UNVERIFIED_OR_MISSING when audit verification fails', async () => {
+    vi.spyOn(api, 'verifyAudit').mockResolvedValueOnce({
+      audit_certificate: mockCerts[0],
+      is_valid: false,
+      message: 'Missing or invalid purge record',
+    });
+
+    render(<AuditLogs events={[]} certificates={mockCerts} />);
+    fireEvent.click(screen.getByText('Verify Proof Path'));
+
+    await waitFor(() => {
+      expect(screen.getByText('VERIFICATION WARNING')).toBeInTheDocument();
+      expect(screen.getByText('UNVERIFIED_OR_MISSING')).toBeInTheDocument();
+    });
   });
 });

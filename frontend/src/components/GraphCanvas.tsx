@@ -81,10 +81,10 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
       };
     });
 
-    // Detect purged nodes to emit explosion particles
+    // Detect newly purged nodes to emit explosion particles once
     nodesRef.current.forEach((prevNode) => {
       const incoming = nodes.find((n) => n.id === prevNode.id);
-      if (!incoming || incoming.status === 'purged') {
+      if (prevNode.status !== 'purged' && (!incoming || incoming.status === 'purged')) {
         // Spawn particle explosion at prevNode position
         spawnExplosion(prevNode.x, prevNode.y, '#F43F5E');
       }
@@ -414,6 +414,10 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerLeave={() => {
+          isDraggingRef.current = false;
+          setHoveredNode(null);
+        }}
         onWheel={handleWheel}
         className="w-full h-full cursor-grab active:cursor-grabbing bg-radial-vignette"
       />

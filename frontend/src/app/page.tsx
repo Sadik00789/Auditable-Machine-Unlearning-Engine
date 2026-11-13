@@ -106,6 +106,8 @@ export default function DashboardPage() {
           return n;
         })
       );
+
+      setSelectedEntityId((prev) => (prev === entity_id ? undefined : prev));
     } else if (lastEvent.type === 'AuditGenerated') {
       const { audit_certificate } = lastEvent.payload;
       setCertificates((prev) => {
@@ -139,13 +141,19 @@ export default function DashboardPage() {
       ];
     });
 
-    setLinks((prev) => [
-      ...prev,
-      {
-        source: `shard_${res.shard_id}`,
-        target: nodeId,
-      },
-    ]);
+    setLinks((prev) => {
+      const sourceId = `shard_${res.shard_id}`;
+      if (prev.some((l) => l.source === sourceId && l.target === nodeId)) {
+        return prev;
+      }
+      return [
+        ...prev,
+        {
+          source: sourceId,
+          target: nodeId,
+        },
+      ];
+    });
   }, []);
 
   const handleUnlearnSuccess = useCallback((res: UnlearnResponse) => {
@@ -158,8 +166,13 @@ export default function DashboardPage() {
       })
     );
 
+    setSelectedEntityId((prev) => (prev === res.entity_id ? undefined : prev));
+
     if (res.audit_certificate) {
-      setCertificates((prev) => [res.audit_certificate, ...prev]);
+      setCertificates((prev) => {
+        if (prev.some((c) => c.audit_id === res.audit_certificate.audit_id)) return prev;
+        return [res.audit_certificate, ...prev];
+      });
     }
   }, []);
 

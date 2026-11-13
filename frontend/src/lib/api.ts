@@ -8,6 +8,20 @@ import {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8080';
 
+async function extractErrorMessage(response: Response, fallback: string): Promise<string> {
+  const errorText = await response.text();
+  if (!errorText) return fallback;
+  try {
+    const parsed = JSON.parse(errorText);
+    if (parsed && typeof parsed.message === 'string' && parsed.message.trim()) {
+      return parsed.message;
+    }
+  } catch {
+    // Plain-text error response
+  }
+  return errorText;
+}
+
 export async function ingestData(data: IngestRequest): Promise<IngestResponse> {
   const response = await fetch(`${API_BASE_URL}/api/v1/ingest`, {
     method: 'POST',
@@ -18,8 +32,7 @@ export async function ingestData(data: IngestRequest): Promise<IngestResponse> {
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `Ingest failed with status ${response.status}`);
+    throw new Error(await extractErrorMessage(response, `Ingest failed with status ${response.status}`));
   }
 
   return response.json();
@@ -35,8 +48,7 @@ export async function ingestBatchData(items: IngestRequest[]): Promise<{ results
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `Batch ingest failed with status ${response.status}`);
+    throw new Error(await extractErrorMessage(response, `Batch ingest failed with status ${response.status}`));
   }
 
   return response.json();
@@ -52,8 +64,7 @@ export async function triggerUnlearn(data: UnlearnRequest): Promise<UnlearnRespo
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `Unlearn execution failed with status ${response.status}`);
+    throw new Error(await extractErrorMessage(response, `Unlearn execution failed with status ${response.status}`));
   }
 
   return response.json();
@@ -72,8 +83,7 @@ export async function verifyAudit(
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `Audit verification failed with status ${response.status}`);
+    throw new Error(await extractErrorMessage(response, `Audit verification failed with status ${response.status}`));
   }
 
   return response.json();
